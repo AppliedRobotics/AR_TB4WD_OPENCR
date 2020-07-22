@@ -5,7 +5,7 @@
 #include <sensor_msgs/Imu.h>
 void init();
 void move_os(float vX, float vY, float wZ);
-void read_joint_state(float* current_velocity);
+void read_joint_state(float* current_velocity, float* current_effort);
 sensor_msgs::Imu read_IMU();
 void gyro_calib();
 float check_voltage();

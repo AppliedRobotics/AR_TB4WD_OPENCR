@@ -75,14 +75,20 @@ void check_motors(){
   int32_t wheel_angular_velocity_real[4] = {0, 0, 0, 0};
   dxl_wb.syncWrite((uint8_t)0, &wheel_angular_velocity_real[0]);
 }
-void read_joint_state(float* current_velocity){
+void read_joint_state(float* current_velocity, float* current_effort){
   const char* log;
   for(int i = 0; i<4; i++){
     uint32_t get_data = 0;
     dxl_wb.readRegister(dxl_id[i], (uint16_t)128, (uint16_t)4, &get_data, &log);
     current_velocity[i] = (int32_t)get_data*0.229/9.24;
+    uint32_t get_data_eff = 0;
+    dxl_wb.readRegister(dxl_id[i], (uint16_t)126, (uint16_t)2, &get_data_eff, &log);
+    if(abs(get_data_eff) > 1023)
+      get_data_eff = 0;
+    current_effort[i] = get_data_eff*0.001*294.2;
     if(dxl_id[i] == 2 || dxl_id[i] == 3)
       current_velocity[i] = -current_velocity[i];
+      current_effort[i] = -current_effort[i];
  //   Serial.println("id: "+String(dxl_id[i])+" data: "+String(current_velocity[i]));
   }
 }

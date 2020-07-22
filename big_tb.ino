@@ -20,8 +20,10 @@ std_msgs::UInt16MultiArray BackLight;
 
 ros::NodeHandle nh;//объект ноудхэндл (по сути создаем ноду)
 
-float target_velocity[4] = {0.0, 0.0, 0.0};
-float current_velocity[4] =  {0.0, 0.0, 0.0};
+float target_velocity[4] = {0.0, 0.0, 0.0, 0.0};
+float current_velocity[4] =  {0.0, 0.0, 0.0, 0.0};
+float current_effort[4] = {0.0, 0.0, 0.0, 0.0};
+float current_position[4] = {0.0, 0.0, 0.0, 0.0};
 uint16_t Frontarray[7] = {0,0,0,0,0,0,0};
 uint16_t Leftarray[7]= {0,0,0,0,0,0,0};
 uint16_t Rightarray[7]= {0,0,0,0,0,0,0};
@@ -67,12 +69,17 @@ void setup() {
 void loop(){
   if(millis() - time_millis > 15)
   {
+    int dt = millis() - time_millis;
     time_millis = millis();
     move_os(target_velocity[0], -target_velocity[1], -target_velocity[2]);
-    read_joint_state(current_velocity);
-    
+    read_joint_state(current_velocity, current_effort);
+    for(int i = 0; i<WHEEL_NUM; i++){
+      current_position[i] +=current_velocity[i]*dt/1000;  
+    }
     joint_state.header.stamp = nh.now();
     joint_state.velocity = current_velocity;
+    joint_state.effort = current_effort;
+    joint_state.position = current_position;
     joint_state_pub.publish(&joint_state); 
     
     voltage.data = check_voltage();
