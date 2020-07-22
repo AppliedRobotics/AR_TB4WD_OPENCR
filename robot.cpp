@@ -60,10 +60,10 @@ void move_os(float vX,float vY,float wZ){//функция движения, пр
   int64_t wheel_value[4] = {0, 0, 0, 0};
   double wheel_angular_velocity[4] = {0.0, 0.0, 0.0, 0.0};
   int32_t wheel_angular_velocity_real[4] = {0, 0, 0, 0};
-  wheel_angular_velocity[0] = (1/R*(vX+vY+wheel_separation*(wZ))*cw);//расчитываем скорости для каждого из моторов с учетом направления его вращения
+  wheel_angular_velocity[0] = (1/R*(vX-vY+wheel_separation*(wZ))*cw);//расчитываем скорости для каждого из моторов с учетом направления его вращения
   wheel_angular_velocity[1] = (1/R*(vX+vY-wheel_separation*(wZ))*ccw);
-  wheel_angular_velocity[2] = (1/R*(vX-vY-wheel_separation*(wZ))*ccw);
-  wheel_angular_velocity[3] = (1/R*(vX-vY+wheel_separation*(wZ))*cw);
+  wheel_angular_velocity[2] = (1/R*(-vX-vY-wheel_separation*(wZ))*ccw);
+  wheel_angular_velocity[3] = (1/R*(-vX+vY+wheel_separation*(wZ))*cw);
   for(int i = 0; i < 4; i++){
     wheel_angular_velocity_real[i] = (int32_t)(wheel_angular_velocity[i]*9.24/0.229);
   }
