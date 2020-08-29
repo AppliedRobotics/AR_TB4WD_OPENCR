@@ -38,16 +38,18 @@ void init(){// функция инициализации dxl устройств
   
   const char *log;  
   bool result = false ;
-  
-//  Serial/.begin(9600);
   uint16_t model_number = 0;
   result = dxl_wb.init(DEVICE_NAME, BAUDRATE, &log);
-  
-  
   for(int i = 0; i<4; i++){
     result = dxl_wb.ping(dxl_id[i], &model_number, &log); 
     
   }
+  dxl_wb.ping(Sensor_Front_ID, &model_number, &log);
+  dxl_wb.writeRegister((uint8_t)Sensor_Front_ID, "Registered", 0);
+  
+  dxl_wb.ping(Sensor_Left_ID, &model_number, &log);
+  dxl_wb.ping(Sensor_Right_ID, &model_number, &log);
+  dxl_wb.ping(Sensor_Back_ID, &model_number, &log);
   for(int i = 0; i<4; i++){
     dxl_wb.wheelMode(dxl_id[i], 0, &log);  
   }
@@ -66,6 +68,7 @@ void move_os(float vX,float vY,float wZ){//функция движения, пр
   wheel_angular_velocity[3] = (1/R*(-vX+vY+wheel_separation*(wZ))*cw);
   for(int i = 0; i < 4; i++){
     wheel_angular_velocity_real[i] = (int32_t)(wheel_angular_velocity[i]*9.24/0.229);
+//    result = dxl_wb.writeRegister((uint8_t)dxl_id[i], "Goal_Velocity", wheel_angular_velocity_real[i]);
   }
   result = dxl_wb.syncWrite((uint8_t)0, &wheel_angular_velocity_real[0], &log);
  // Serial.println(String(wheel_angular_velocity_real[0])+String(wheel_angular_velocity_real[1])+String(wheel_angular_velocity_real[2])+String(wheel_angular_velocity_real[3]));
@@ -98,52 +101,20 @@ float check_voltage(){
   vol_value = vol_value/100;
   return vol_value;
 }
-sensor_msgs::Imu read_IMU(){
-  sensor_msgs::Imu imu_msg_;
+float* read_IMU(){
+  static float imu_arr[10];
   IMU.update();
-  imu_msg_.angular_velocity.x = IMU.SEN.gyroADC[0] * GYRO_FACTOR;
-  imu_msg_.angular_velocity.y = IMU.SEN.gyroADC[1] * GYRO_FACTOR;
-  imu_msg_.angular_velocity.z = IMU.SEN.gyroADC[2] * GYRO_FACTOR;
-  imu_msg_.angular_velocity_covariance[0] = 0.02;
-  imu_msg_.angular_velocity_covariance[1] = 0;
-  imu_msg_.angular_velocity_covariance[2] = 0;
-  imu_msg_.angular_velocity_covariance[3] = 0;
-  imu_msg_.angular_velocity_covariance[4] = 0.02;
-  imu_msg_.angular_velocity_covariance[5] = 0;
-  imu_msg_.angular_velocity_covariance[6] = 0;
-  imu_msg_.angular_velocity_covariance[7] = 0;
-  imu_msg_.angular_velocity_covariance[8] = 0.02;
-
-  imu_msg_.linear_acceleration.x = IMU.SEN.accADC[0] * ACCEL_FACTOR;
-  imu_msg_.linear_acceleration.y = IMU.SEN.accADC[1] * ACCEL_FACTOR;
-  imu_msg_.linear_acceleration.z = IMU.SEN.accADC[2] * ACCEL_FACTOR;
-
-  imu_msg_.linear_acceleration_covariance[0] = 0.04;
-  imu_msg_.linear_acceleration_covariance[1] = 0;
-  imu_msg_.linear_acceleration_covariance[2] = 0;
-  imu_msg_.linear_acceleration_covariance[3] = 0;
-  imu_msg_.linear_acceleration_covariance[4] = 0.04;
-  imu_msg_.linear_acceleration_covariance[5] = 0;
-  imu_msg_.linear_acceleration_covariance[6] = 0;
-  imu_msg_.linear_acceleration_covariance[7] = 0;
-  imu_msg_.linear_acceleration_covariance[8] = 0.04;
-
-  imu_msg_.orientation.w = IMU.quat[0];
-  imu_msg_.orientation.x = IMU.quat[1];
-  imu_msg_.orientation.y = IMU.quat[2];
-  imu_msg_.orientation.z = IMU.quat[3];
-
-  imu_msg_.orientation_covariance[0] = 0.0025;
-  imu_msg_.orientation_covariance[1] = 0;
-  imu_msg_.orientation_covariance[2] = 0;
-  imu_msg_.orientation_covariance[3] = 0;
-  imu_msg_.orientation_covariance[4] = 0.0025;
-  imu_msg_.orientation_covariance[5] = 0;
-  imu_msg_.orientation_covariance[6] = 0;
-  imu_msg_.orientation_covariance[7] = 0;
-  imu_msg_.orientation_covariance[8] = 0.0025;
-
-  return imu_msg_;
+  imu_arr[0] = IMU.SEN.gyroADC[0] * GYRO_FACTOR;
+  imu_arr[1] = IMU.SEN.gyroADC[1] * GYRO_FACTOR;
+  imu_arr[2] = IMU.SEN.gyroADC[2] * GYRO_FACTOR;
+  imu_arr[3] = IMU.SEN.accADC[0] * ACCEL_FACTOR;
+  imu_arr[4] = IMU.SEN.accADC[1] * ACCEL_FACTOR;
+  imu_arr[5] = IMU.SEN.accADC[2] * ACCEL_FACTOR;
+  imu_arr[6] = IMU.quat[0];
+  imu_arr[7] = IMU.quat[1];
+  imu_arr[8] = IMU.quat[2];
+  imu_arr[9] = IMU.quat[3];
+  return imu_arr;
 }
 void gyro_calib(){
    IMU.SEN.acc_cali_start();
@@ -152,90 +123,65 @@ void gyro_calib(){
       IMU.update();
    }
 }
-void scan1(uint16_t* Frontarray, uint16_t* Leftarray, uint16_t* Rightarray, uint16_t* Backarray) // функция опроса датчиков
-{
- // sendval();
-//////////////////////  передний датчик //////////////////////
-   uint32_t respf[14];
-   int idx;
-    dxl_wb.readRegister(Sensor_Front_ID, 24, 14, respf);
-    
-    idx = 0;
-    Frontarray[0] = respf[idx] + (respf[idx + 1] << 8);
-    idx += 2;
-    Frontarray[1] = respf[idx] + (respf[idx + 1] << 8);
-    idx += 2;
-    Frontarray[2] = respf[idx] + (respf[idx + 1] << 8);
-    idx += 2;
-    Frontarray[3] = respf[idx] + (respf[idx + 1] << 8);
-    idx += 2;
-    Frontarray[4] = respf[idx] + (respf[idx + 1] << 8);
-    idx += 2;
-    Frontarray[5] = respf[idx] + (respf[idx + 1] << 8);
-    idx += 2;
-    Frontarray[6] = respf[idx] + (respf[idx + 1] << 8);
-      
-//////////////////////  левый датчик //////////////////////
-    uint32_t respl[14];
+uint32_t* scan_front(){
+  static uint32_t Frontarray[7];
+  uint32_t respf;
+  int idx;
+  bool result = true;
+  for(int i = 0; i < 7;i++){
+    result = dxl_wb.readRegister((uint8_t)Sensor_Front_ID, (uint16_t)(24+2*i), (uint16_t)2, &respf);   
+    if(result == false)
+      Frontarray[i] = 0;
+    else
+      Frontarray[i] = respf;
+   delay(2);
 
-    dxl_wb.readRegister(Sensor_Left_ID, 24, 14, respl);
-      
-    idx = 0;
-    Leftarray[6] = respl[idx] + (respl[idx + 1] << 8);
-    idx += 2;
-    Leftarray[5] = respl[idx] + (respl[idx + 1] << 8);
-    idx += 2;
-    Leftarray[4] = respl[idx] + (respl[idx + 1] << 8);
-    idx += 2;
-    Leftarray[3] = respl[idx] + (respl[idx + 1] << 8);
-    idx += 2;
-    Leftarray[2] = respl[idx] + (respl[idx + 1] << 8);
-    idx += 2;
-    Leftarray[1] = respl[idx] + (respl[idx + 1] << 8);
-    idx += 2;
-    Leftarray[0] = respl[idx] + (respl[idx + 1] << 8);
-    idx = 0;
-      
-//////////////////////  правый датчик //////////////////////
-     uint32_t respr[14];
+  }
+  return Frontarray; 
+}
+uint32_t* scan_left(){
+  static uint32_t Leftarray[7];
+  uint32_t respl;
+  int idx;
+  bool result = true;
+  for(int i = 0; i < 7;i++){
+    result = dxl_wb.readRegister((uint8_t)Sensor_Left_ID, (uint16_t)(24+2*i), (uint16_t)2, &respl);   
+    if(result == false)
+      Leftarray[6-i] = 0;
+    else
+      Leftarray[6-i] = respl;
+    delay(2);
 
-    dxl_wb.readRegister(Sensor_Right_ID, 24, 14, respr);
-      
-    idx = 0;
-    Rightarray[6] = respr[idx] + (respr[idx + 1] << 8);
-    idx += 2;
-    Rightarray[5] = respr[idx] + (respr[idx + 1] << 8);
-    idx += 2;
-    Rightarray[4] = respr[idx] + (respr[idx + 1] << 8);
-    idx += 2;
-    Rightarray[3] = respr[idx] + (respr[idx + 1] << 8);
-    idx += 2;
-    Rightarray[2] = respr[idx] + (respr[idx + 1] << 8);
-    idx += 2;
-    Rightarray[1] = respr[idx] + (respr[idx + 1] << 8);
-    idx += 2;
-    Rightarray[0] = respr[idx] + (respr[idx + 1] << 8);
-    idx = 0;
-      
-//////////////////////  задний датчик //////////////////////
-    uint32_t respb[14];
-
-    dxl_wb.readRegister(Sensor_Back_ID, 24, 14, respb);
-      
-    idx = 0;
-    Backarray[6] = respb[idx] + (respb[idx + 1] << 8);
-    idx += 2;
-    Backarray[5] = respb[idx] + (respb[idx + 1] << 8);
-    idx += 2;
-    Backarray[4] = respb[idx] + (respb[idx + 1] << 8);
-    idx += 2;
-    Backarray[3] = respb[idx] + (respb[idx + 1] << 8);
-    idx += 2;
-    Backarray[2] = respb[idx] + (respb[idx + 1] << 8);
-    idx += 2;
-    Backarray[1] = respb[idx] + (respb[idx + 1] << 8);
-    idx += 2;
-    Backarray[0] = respb[idx] + (respb[idx + 1] << 8);
-    idx = 0;
-      
-} 
+  }
+  return Leftarray;
+}
+uint32_t* scan_right(){
+  static uint32_t Rightarray[7];
+  uint32_t respr;
+  int idx;
+  bool result = true;
+  for(int i = 0; i < 7;i++){
+    result = dxl_wb.readRegister((uint8_t)Sensor_Right_ID, (uint16_t)(24+2*i), (uint16_t)2, &respr);   
+    if(result == false)
+      Rightarray[6-i] = 0;
+    else
+      Rightarray[6-i] = respr;
+    delay(2);
+  }
+  return Rightarray;
+}
+uint32_t* scan_back(){
+  static uint32_t Backarray[7];
+  uint32_t respb;
+  int idx;
+  bool result = true;
+  for(int i = 0; i < 7;i++){
+    dxl_wb.readRegister((uint8_t)Sensor_Back_ID, (uint16_t)(24+2*i), (uint16_t)2, &respb);   
+    if(result == false)
+      Backarray[6-i] = 0;
+    else
+      Backarray[6-i] = respb;
+    delay(2);
+  }
+  return Backarray;
+}

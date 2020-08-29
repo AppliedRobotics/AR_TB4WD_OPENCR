@@ -6,8 +6,11 @@
 void init();
 void move_os(float vX, float vY, float wZ);
 void read_joint_state(float* current_velocity, float* current_effort);
-sensor_msgs::Imu read_IMU();
+float* read_IMU();
 void gyro_calib();
 float check_voltage();
 void check_motors();
-void scan1(uint16_t* Frontarray, uint16_t* Leftarray, uint16_t* Rightarray, uint16_t* Backarray);
+uint32_t* scan_front();
+uint32_t* scan_left();
+uint32_t* scan_right();
+uint32_t* scan_back();
