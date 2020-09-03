@@ -86,6 +86,7 @@ void read_joint_state(float* current_velocity, float* current_effort){
     current_velocity[i] = (int32_t)get_data*0.229/9.24;
     uint32_t get_data_eff = 0;
     dxl_wb.readRegister(dxl_id[i], (uint16_t)126, (uint16_t)2, &get_data_eff, &log);
+    delay(5);
     if(abs(get_data_eff) > 1023)
       get_data_eff = 0;
     current_effort[i] = get_data_eff*0.001*294.2;
@@ -134,7 +135,7 @@ uint32_t* scan_front(){
       Frontarray[i] = 0;
     else
       Frontarray[i] = respf;
-   delay(2);
+   delay(6);
 
   }
   return Frontarray; 
@@ -150,7 +151,7 @@ uint32_t* scan_left(){
       Leftarray[6-i] = 0;
     else
       Leftarray[6-i] = respl;
-    delay(2);
+    delay(6);
 
   }
   return Leftarray;
@@ -166,7 +167,7 @@ uint32_t* scan_right(){
       Rightarray[6-i] = 0;
     else
       Rightarray[6-i] = respr;
-    delay(2);
+    delay(6);
   }
   return Rightarray;
 }
@@ -181,7 +182,7 @@ uint32_t* scan_back(){
       Backarray[6-i] = 0;
     else
       Backarray[6-i] = respb;
-    delay(2);
+    delay(6);
   }
   return Backarray;
 }

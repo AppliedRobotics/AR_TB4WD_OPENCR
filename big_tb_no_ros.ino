@@ -47,7 +47,7 @@ void setup() {
 }
 
 void loop(){
-  if(voltage[0] > 9.5){
+  if(voltage[0] > 10){
     if (stringComplete){
       inputString = "";
       stringComplete = false;
@@ -72,14 +72,14 @@ void loop(){
     {
       time_millis[1] = millis();
       voltage[0] = check_voltage();
-    //  sendSerial_float(voltage, 1, "vol");
+      sendSerial_float(voltage, 1, "vol");
     }
-    /*if(millis() - time_millis[2] > 45)
+    if(millis() - time_millis[2] > 45)
     {
       time_millis[2] = millis();
       imu_arr = read_IMU();
-    //  sendSerial_float(imu_arr, 10, "imu");
-    }*/
+      sendSerial_float(imu_arr, 10, "imu");
+    }
     if(millis() - time_millis[3] > 40){
         time_millis[3] = millis(); 
         if(count == 0)
@@ -112,10 +112,11 @@ void loop(){
     }
   }
   else{
-    tone(BDPIN_BUZZER, 10, 250);
-    delay(1000);
+    voltage[0] = check_voltage();
+    tone(BDPIN_BUZZER, 1000, 250);
+    delay(100);
     noTone(BDPIN_BUZZER);
-    delay(1000);
+    delay(100);
     move_os(0, 0, 0);
   }
   //delayMicroseconds(5);
