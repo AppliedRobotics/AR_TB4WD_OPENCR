@@ -56,7 +56,7 @@ void loop(){
     {
       int dt = millis() - time_millis[0];
       time_millis[0] = millis();
-      move_os(target_velocity[0], -target_velocity[1], -target_velocity[2]);
+      move_os(target_velocity[0], target_velocity[1], -target_velocity[2]);
       read_joint_state(current_velocity, current_effort);
       for(int i = 0; i<WHEEL_NUM; i++){
         if(abs(current_position[i]) < 10000)
@@ -80,7 +80,7 @@ void loop(){
       imu_arr = read_IMU();
       sendSerial_float(imu_arr, 10, "imu");
     }
-    if(millis() - time_millis[3] > 40){
+    if(millis() - time_millis[3] > 50){
         time_millis[3] = millis(); 
         if(count == 0)
           buf_0 = scan_front();
