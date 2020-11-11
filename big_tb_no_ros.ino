@@ -28,7 +28,7 @@ uint32_t* buf_0;
 uint32_t* buf_1;
 uint32_t* buf_2;
 uint32_t* buf_3;
-
+bool ir_broken = false;
 int time_cmd_vel = 0;
 int time_millis[7] = {0,0,0,0,0,0,0};
 //HardwareTimer Timer(TIMER_CH4);//таймер для обновления информации приходящей из ROS-а
@@ -47,7 +47,7 @@ void setup() {
 }
 
 void loop(){
-  if(voltage[0] > 10){
+  if(voltage[0] > 10 && ir_broken == false){
     if (stringComplete){
       inputString = "";
       stringComplete = false;
@@ -57,6 +57,7 @@ void loop(){
       int dt = millis() - time_millis[0];
       time_millis[0] = millis();
       move_os(target_velocity[0], target_velocity[1], -target_velocity[2]);
+      delay(5);
       read_joint_state(current_velocity, current_effort);
       for(int i = 0; i<WHEEL_NUM; i++){
         if(abs(current_position[i]) < 10000)
@@ -80,7 +81,7 @@ void loop(){
       imu_arr = read_IMU();
       sendSerial_float(imu_arr, 10, "imu");
     }
-    if(millis() - time_millis[3] > 50){
+    if(millis() - time_millis[3] > 60){
         time_millis[3] = millis(); 
         if(count == 0)
           buf_0 = scan_front();
@@ -99,6 +100,9 @@ void loop(){
                 ir_sensors[i] = buf_2[i-14];
               if(i > 20 and i < 28)
                 ir_sensors[i] = buf_3[i-21];
+              if(ir_sensors[i] > 1000){
+                ir_broken = true;
+              }
           }
           sendSerial_int(ir_sensors, 28, "light");
           count = -1;
@@ -109,11 +113,21 @@ void loop(){
       target_velocity[0]= 0;
       target_velocity[1]= 0;
       target_velocity[2] = 0;
+      
     }
   }
   else{
     voltage[0] = check_voltage();
-    tone(BDPIN_BUZZER, 1000, 250);
+    if(millis() - time_millis[1] > 1000)
+    {
+      time_millis[1] = millis();
+      voltage[0] = check_voltage();
+      sendSerial_float(voltage, 1, "vol");
+    }
+    if(ir_broken == true)
+      tone(BDPIN_BUZZER, 1500, 100); 
+    else
+      tone(BDPIN_BUZZER, 1000, 250);
     delay(100);
     noTone(BDPIN_BUZZER);
     delay(100);
